@@ -1,0 +1,63 @@
+import { Github } from 'lucide-react';
+
+export default function Footer() {
+  return (
+    <footer className="w-full bg-white border-t border-gray-100">
+      <div className="container mx-auto px-6 py-12">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+          {/* Logo et infos */}
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 flex items-center justify-center">
+              <svg width="32" height="22" viewBox="0 0 142 81" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M-9.76585e-06 0L37.13 18.71C37.59 21.16 37.45 23.85 37.43 26.37C37.43 26.86 37.23 27.33 37.22 27.87C37.2 31.15 37.36 34.4 37.41 37.67L42.29 40.29C42.31 40.75 42.48 41.22 42.51 41.67C43.11 49.33 42.06 57.74 42.52 65.49C42.72 66.97 41.03 65.82 40.27 65.45C27.26 59.1 14.59 51.87 1.69999 45.25C1.19999 44.99 0.54999 44.68 -0.0100098 44.6V0H-9.76585e-06ZM13.23 23.81C14.61 24.28 23.48 29.26 24.08 29.09C24.26 29.04 24.39 28.82 24.39 28.63C23.98 27.74 24.55 26.41 23.81 25.8C21.01 24.54 18.32 22.87 15.54 21.6C14.83 21.28 13.98 20.84 13.23 20.79V23.81ZM13.35 34.41C12.88 34.56 12.81 37.39 13.43 37.69L28.53 45.46C29.7 46.05 29.37 42.75 29.1 42.43C27.23 41.62 14.19 34.14 13.35 34.41Z" fill="#BE2D39"/>
+                <path d="M141.73 0.190054V14.1701C140.12 14.6601 138.51 15.5601 137 16.3401C129.63 20.1201 121.67 23.8401 114.51 27.8601C114.12 28.0801 112.6 28.9301 112.43 29.1801C112.15 29.5701 111.91 32.4301 112.97 31.8101C122.36 27.5801 131.39 22.4301 140.79 18.2301C141.1 18.0901 141.37 17.9101 141.74 17.9501V44.7801L99.03 66.3201V53.7501C100.38 52.9001 101.78 52.0501 103.18 51.2901C110.74 47.1801 119.05 43.4001 126.37 38.9501C128.28 37.7901 128.8 37.7401 128.51 35.1401L127.37 35.2301C118.04 40.0301 108.86 45.1801 99.49 49.8801C99.33 49.9201 99.03 49.6801 99.03 49.6001V22.7701C99.03 22.2001 101.11 21.1901 101.67 20.8801C108.07 17.3001 114.99 14.0901 121.52 10.6801C128.05 7.27005 134.08 3.70005 140.41 0.650054C140.84 0.440054 141.27 0.260054 141.74 0.180054L141.73 0.190054Z" fill="#BE2D39"/>
+                <path d="M82.96 28.06C82.86 27.7 78.33 25.42 78.05 25.7L77.82 76.59C77.61 77.16 72.3 79.71 71.43 80.02C71.09 80.14 70.79 80.3101 70.41 80.3C69.82 80.2701 65.28 77.9501 64.53 77.48C63.93 77.1001 63.23 76.8101 63.16 76.01C63.02 59.31 63.66 42.56 63.11 25.88C62.81 25.58 58.76 27.66 58.76 28.05V74.25L57.87 74.1C53.84 71.82 49.43 70.14 45.4 67.86C44.85 67.55 44.01 67.18 43.87 66.56C43.83 57.5 43.78 48.44 43.82 39.38C43.84 34.68 44.08 29.94 44.03 25.21C44.01 23.35 43.62 21.3 43.85 19.38C44.03 17.9 44.66 18.02 45.78 17.34C53.67 14.09 61.48 8.68004 69.27 5.49004C70.48 5.00004 70.48 5.02004 71.68 5.49004L97.52 18.58L97.69 18.98L97.66 66.75C97.55 67.12 96.72 67.53 96.38 67.73C92.36 70.1301 87.51 71.89 83.42 74.25C83.26 74.29 82.96 74.04 82.96 73.96V28.06Z" fill="#BE2D39"/>
+              </svg>
+            </div>
+            <div>
+              <div className="text-lg font-black text-gray-900">BMS TRACKER</div>
+              <div className="text-sm text-gray-500 font-medium">Powered by Start.gg API</div>
+            </div>
+          </div>
+          
+          {/* Liens */}
+          <div className="flex items-center gap-8">
+            <a 
+              href="https://start.gg" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-gray-600 font-medium transition-colors"
+              onMouseOver={(e) => (e.target as HTMLElement).style.color = '#BE2D39'}
+              onMouseOut={(e) => (e.target as HTMLElement).style.color = ''}
+            >
+              Start.gg
+            </a>
+            <a 
+              href="https://developer.start.gg" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-gray-600 font-medium transition-colors"
+              onMouseOver={(e) => (e.target as HTMLElement).style.color = '#BE2D39'}
+              onMouseOut={(e) => (e.target as HTMLElement).style.color = ''}
+            >
+              API Docs
+            </a>
+            <a 
+              href="https://github.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-gray-600 transition-colors"
+              onMouseOver={(e) => (e.target as HTMLElement).style.color = '#BE2D39'}
+              onMouseOut={(e) => (e.target as HTMLElement).style.color = ''}
+            >
+              <Github className="w-5 h-5" />
+            </a>
+          </div>
+        </div>
+        
+
+       
+      </div>
+    </footer>
+  );
+} 
