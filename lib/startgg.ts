@@ -4,6 +4,16 @@ export interface Event {
   name: string;
 }
 
+// Player interface for components that need simple player data
+export interface Player {
+  id: string;
+  gamerTag: string;
+  prefix?: string;
+}
+
+// Set type alias for components that work with set data
+export type Set = UserSet;
+
 // Types étendus pour supporter toutes les données disponibles
 export interface Image {
   url: string;
