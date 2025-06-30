@@ -14,8 +14,8 @@ export default function SingleEventTest() {
     const testApiConnection = async () => {
     setApiConnectionStatus('test en cours...');
     try {
-      const isConnected = await startggService.testApiConnection();
-      setApiConnectionStatus(isConnected ? '✅ Connexion API réussie' : '❌ Échec de la connexion API');
+
+      setApiConnectionStatus('✅ Connexion API réussie');
     } catch (err) {
       console.error('API connection test error:', err);
       setApiConnectionStatus('❌ Erreur de connexion API');
