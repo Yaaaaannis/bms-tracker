@@ -547,9 +547,8 @@ class StartggService {
   private readonly API_TOKEN = process.env.NEXT_PUBLIC_STARTGG_TOKEN;
 
   private async makeRequest<T>(query: string, variables: Record<string, unknown> = {}): Promise<T> {
-    // Debug: vérifier le token
-    console.log('API Token (first 10 chars):', this.API_TOKEN?.substring(0, 10) + '...');
-    console.log('API Token exists:', !!this.API_TOKEN);
+
+
     
     if (!this.API_TOKEN) {
       throw new Error('API Token manquant! Vérifiez votre fichier .env.local');
@@ -560,7 +559,7 @@ class StartggService {
       variables,
     };
     
-    console.log('Request body:', JSON.stringify(requestBody, null, 2));
+
 
     const response = await fetch(this.API_URL, {
       method: 'POST',
@@ -571,20 +570,19 @@ class StartggService {
       body: JSON.stringify(requestBody),
     });
 
-    console.log('Response status:', response.status);
-    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.log('Error response body:', errorText);
+
       throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    console.log('Response data:', data);
+
     
     if (data.errors) {
-      console.log('GraphQL errors:', data.errors);
+
       throw new Error(`GraphQL error: ${data.errors.map((e: { message: string }) => e.message).join(', ')}`);
     }
 
@@ -718,7 +716,7 @@ class StartggService {
   // Fonction pour récupérer les tournois populaires (pour compatibilité avec votre code existant)
   async getPopularTournaments(): Promise<Tournament[]> {
     // Retourner des données factices pour éviter les erreurs API
-    console.log('Using mock data for popular tournaments');
+
     return [
       {
         id: '1',
@@ -747,26 +745,6 @@ class StartggService {
     ];
   }
 
-  // Test simple pour vérifier la connexion API
-  async testApiConnection(): Promise<boolean> {
-    try {
-      // Requête très simple sans paramètres
-      const simpleQuery = `
-        query {
-          currentUser {
-            id
-            slug
-          }
-        }
-      `;
-      const result = await this.makeRequest(simpleQuery, {});
-      console.log('API test result:', result);
-      return true;
-    } catch (error) {
-      console.error('API Connection test failed:', error);
-      return false;
-    }
-  }
 
   // Fonction utilitaire pour récupérer un seul événement directement (pour vos tests)
   async getSingleEventForTesting(slug: string): Promise<Event | null> {
