@@ -71,7 +71,7 @@ export default function Home() {
                 <div className="text-center">
                   <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-xl font-bold text-gray-900 mb-2">Section Joueurs</h3>
-                  <p className="text-gray-600">Cette section sera développée prochainement.</p>
+                  <p className="text-gray-600">Cette section sera bientôt disponible.</p>
                 </div>
               </div>
             </div>
