@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Tournament, startggService, User } from '@/lib/startgg';
+import { Tournament, startggService, User, UserTournaments } from '@/lib/startgg';
 
 // Joueurs prédéfinis - centralisés ici
 export const DEFAULT_PLAYERS = [
@@ -9,8 +9,11 @@ export const DEFAULT_PLAYERS = [
   '57bd7962',   // Joueur 2
 ];
 
+// Type pour un tournoi complet avec toutes les propriétés nécessaires
+export type FullTournament = UserTournaments['nodes'][0];
+
 export interface TournamentWithPlayers {
-  tournament: Tournament;
+  tournament: FullTournament;
   participatingPlayers: Array<{
     slug: string;
     user: User;
@@ -60,16 +63,6 @@ export function TournamentsProvider({ children }: { children: ReactNode }) {
           
           if (userTournaments?.nodes && userData) {
             userTournaments.nodes.forEach(tournament => {
-              const tournamentData: Tournament = {
-                id: tournament.id,
-                name: tournament.name,
-                slug: tournament.slug,
-                startAt: tournament.startAt,
-                city: tournament.city,
-                countryCode: tournament.countryCode,
-                events: tournament.events?.map(e => ({ id: e.id, name: e.name })) || []
-              };
-
               if (tournamentsMap.has(tournament.id)) {
                 // Ajouter ce joueur à la liste des participants
                 const existing = tournamentsMap.get(tournament.id)!;
@@ -79,10 +72,20 @@ export function TournamentsProvider({ children }: { children: ReactNode }) {
               } else {
                 // Créer une nouvelle entrée pour ce tournoi
                 tournamentsMap.set(tournament.id, {
-                  tournament: tournamentData,
+                  tournament: tournament, // Utiliser directement les données du tournoi
                   participatingPlayers: [{ slug: playerSlug, user: userData }]
                 });
-                allTourns.push(tournamentData);
+                // Convertir vers Tournament simple seulement pour allTournaments
+                const simpleTournament: Tournament = {
+                  id: tournament.id,
+                  name: tournament.name,
+                  slug: tournament.slug,
+                  startAt: tournament.startAt,
+                  city: tournament.city,
+                  countryCode: tournament.countryCode,
+                  events: tournament.events?.map(e => ({ id: e.id, name: e.name })) || []
+                };
+                allTourns.push(simpleTournament);
               }
             });
           }

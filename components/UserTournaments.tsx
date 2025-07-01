@@ -306,7 +306,7 @@ export default function UserTournaments() {
                             : 'hover:bg-gray-50'
                         }`}
                         onClick={() => {
-                          if (isPastEvent) {
+                          if (isPastEvent && item.tournament.slug) {
                             const firstPlayer = item.participatingPlayers[0];
                             setSelectedTournamentForSets({
                               userSlug: firstPlayer.slug,
