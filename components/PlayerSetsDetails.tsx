@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { startggService, PlayerSetsInTournament, TournamentSet } from '@/lib/startgg';
-import { Trophy, X, TrendingUp, TrendingDown, Minus, Users, ExternalLink } from 'lucide-react';
+import { findVodForSet, buildVodUrl, SetVod } from '@/lib/sanity';
+import { Trophy, X, TrendingUp, TrendingDown, Minus, Users, ExternalLink, Play } from 'lucide-react';
 
 interface PlayerSetsDetailsProps {
   userSlug: string;
@@ -22,6 +23,7 @@ export default function PlayerSetsDetails({
   const [sets, setSets] = useState<PlayerSetsInTournament | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [vods, setVods] = useState<Map<string, SetVod>>(new Map());
 
   useEffect(() => {
     loadPlayerSets();
@@ -33,6 +35,29 @@ export default function PlayerSetsDetails({
       setError(null);
       const data = await startggService.getPlayerSetsInTournament(userSlug, tournamentSlug);
       setSets(data);
+      
+      // Charger les VODs pour chaque set
+      if (data?.nodes) {
+        const vodMap = new Map<string, SetVod>();
+        
+        for (const set of data.nodes) {
+          const opponent = getOpponentName(set);
+          const setName = set.fullRoundText || `Round ${set.round}`;
+          
+          const vod = await findVodForSet(
+            playerName,
+            opponent,
+            tournamentName,
+            setName
+          );
+          
+          if (vod) {
+            vodMap.set(set.id, vod);
+          }
+        }
+        
+        setVods(vodMap);
+      }
     } catch (err) {
       console.error('Error loading player sets:', err);
       setError('Erreur lors du chargement des sets');
@@ -269,15 +294,34 @@ export default function PlayerSetsDetails({
                           </div>
                         </div>
 
-                        {/* Badge résultat */}
-                        <div className={`px-3 py-1 rounded-full text-sm font-bold ${
-                          result === 'win' 
-                            ? 'bg-green-600 text-white' 
-                            : result === 'loss' 
-                              ? 'bg-red-600 text-white'
-                              : 'bg-gray-600 text-white'
-                        }`}>
-                          {result === 'win' ? 'VICTOIRE' : result === 'loss' ? 'DÉFAITE' : 'EN COURS'}
+                        {/* Actions */}
+                        <div className="flex items-center gap-2">
+                          {/* Bouton VOD si disponible */}
+                          {vods.has(set.id) && (
+                            <a
+                              href={buildVodUrl(
+                                vods.get(set.id)!.vodUrl,
+                                vods.get(set.id)!.timestamp
+                              )}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-colors"
+                            >
+                              <Play className="w-4 h-4" />
+                              VOD
+                            </a>
+                          )}
+                          
+                          {/* Badge résultat */}
+                          <div className={`px-3 py-1 rounded-full text-sm font-bold ${
+                            result === 'win' 
+                              ? 'bg-green-600 text-white' 
+                              : result === 'loss' 
+                                ? 'bg-red-600 text-white'
+                                : 'bg-gray-600 text-white'
+                          }`}>
+                            {result === 'win' ? 'VICTOIRE' : result === 'loss' ? 'DÉFAITE' : 'EN COURS'}
+                          </div>
                         </div>
                       </div>
                     </div>
