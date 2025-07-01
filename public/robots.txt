@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://your-domain.com/sitemap.xml
+
+# Blocages spécifiques (optionnel)
+# Disallow: /admin/
+# Disallow: /api/
+
+# Crawl-delay pour éviter la surcharge
+Crawl-delay: 1 
