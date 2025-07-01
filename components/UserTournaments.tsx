@@ -1,48 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { startggService, UserTournaments as UserTournamentsType, User } from '@/lib/startgg';
+import { User } from '@/lib/startgg';
 import { Trophy, ExternalLink, Calendar, MapPin, Users, User as UserIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import EventFilters, { FilterType } from './EventFilters';
 import PlayerSetsDetails from './PlayerSetsDetails';
-
-// Joueurs prédéfinis - CHANGEZ CES SLUGS ICI
-const DEFAULT_PLAYERS = [
-  'c28aec41',  // Joueur 1 - remplacez par le slug voulu
-  '57bd7962',   // Joueur 2 - remplacez par le slug voulu  
-
-];
-
-interface PlayerData {
-  user: User | null;
-  tournaments: UserTournamentsType | null;
-  isLoading: boolean;
-  error: string | null;
-}
-
-interface TournamentNode {
-  id: string;
-  name: string;
-  slug: string;
-  startAt?: number;
-  endAt?: number;
-  city?: string;
-  countryCode?: string;
-  numAttendees?: number;
-  isRegistrationOpen?: boolean;
-  images?: Array<{ url: string; type?: string }>;
-  events?: Array<{ id: string; name: string; numEntrants?: number; videogame?: { name: string } }>;
-}
-
-interface GroupedTournament {
-  tournament: TournamentNode;
-  participatingPlayers: { slug: string; user: User }[];
-}
+import { useTournaments, TournamentWithPlayers, DEFAULT_PLAYERS } from '@/lib/TournamentsContext';
 
 export default function UserTournaments() {
-  const [playersData, setPlayersData] = useState<{ [key: string]: PlayerData }>({});
-  const [groupedTournaments, setGroupedTournaments] = useState<GroupedTournament[]>([]);
-  const [allTournaments, setAllTournaments] = useState<GroupedTournament[]>([]);
+  // Utiliser le contexte pour récupérer les données
+  const { tournamentsWithPlayers, isLoadingTournaments } = useTournaments();
+  
+  const [groupedTournaments, setGroupedTournaments] = useState<TournamentWithPlayers[]>([]);
+  const [allTournaments, setAllTournaments] = useState<TournamentWithPlayers[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [eventFilter, setEventFilter] = useState<FilterType>('upcoming');
   const [selectedTournamentForSets, setSelectedTournamentForSets] = useState<{
@@ -53,104 +23,25 @@ export default function UserTournaments() {
   } | null>(null);
   const itemsPerPage = 15;
 
-  // Initialiser les données des joueurs
+  // Appliquer les filtres et trier les tournois du contexte
   useEffect(() => {
-    const initialData: { [key: string]: PlayerData } = {};
-    DEFAULT_PLAYERS.forEach(slug => {
-      initialData[slug] = {
-        user: null,
-        tournaments: null,
-        isLoading: true,
-        error: null
-      };
-    });
-    setPlayersData(initialData);
-
-    // Charger les données de chaque joueur
-    DEFAULT_PLAYERS.forEach(slug => loadPlayerData(slug));
-  }, []);
-
-  // Regrouper les tournois quand les données changent
-  useEffect(() => {
-    groupTournaments();
-  }, [playersData]);
-
-  const loadPlayerData = async (slug: string) => {
-    try {
-      // Récupérer les informations complètes de l'utilisateur (avec images)
-      const userData = await startggService.getUserEnhanced(slug);
-      
-      // Récupérer ses tournois
-      const tournamentsData = await startggService.getUserTournaments(slug);
-      
-      setPlayersData(prev => ({
-        ...prev,
-        [slug]: {
-          user: userData,
-          tournaments: tournamentsData,
-          isLoading: false,
-          error: tournamentsData?.nodes.length === 0 ? 'Aucun tournoi trouvé' : null
-        }
-      }));
-    } catch (err) {
-      console.error(`Error fetching data for ${slug}:`, err);
-      setPlayersData(prev => ({
-        ...prev,
-        [slug]: {
-          ...prev[slug],
-          isLoading: false,
-          error: 'Erreur lors du chargement'
-        }
-      }));
-    }
-  };
-
-  const groupTournaments = () => {
-    const tournamentMap = new Map<string, GroupedTournament>();
-
-    // Parcourir chaque joueur et ses tournois
-    Object.entries(playersData).forEach(([slug, playerData]) => {
-      if (playerData.tournaments && playerData.user) {
-        playerData.tournaments.nodes.forEach(tournament => {
-          const tournamentId = tournament.id;
-          
-          if (tournamentMap.has(tournamentId)) {
-            // Ajouter ce joueur à la liste des participants
-            const existing = tournamentMap.get(tournamentId)!;
-            if (!existing.participatingPlayers.some(p => p.slug === slug) && playerData.user) {
-              existing.participatingPlayers.push({ slug, user: playerData.user });
-            }
-          } else {
-            // Créer une nouvelle entrée pour ce tournoi
-            if (playerData.user) {
-              tournamentMap.set(tournamentId, {
-                tournament,
-                participatingPlayers: [{ slug, user: playerData.user }]
-              });
-            }
-          }
-        });
-      }
-    });
-
-    // Convertir en tableau et stocker tous les tournois
-    const allTourns = Array.from(tournamentMap.values())
-      .sort((a, b) => {
+    if (tournamentsWithPlayers.length > 0) {
+      // Stocker tous les tournois
+      const sortedTournaments = [...tournamentsWithPlayers].sort((a, b) => {
         const dateA = a.tournament.startAt || 0;
         const dateB = b.tournament.startAt || 0;
         return dateB - dateA; // Plus récent en premier pour les événements passés
       });
+      
+      setAllTournaments(sortedTournaments);
+      applyFilter(sortedTournaments, eventFilter);
+    }
+  }, [tournamentsWithPlayers, eventFilter]);
 
-    setAllTournaments(allTourns);
-    
-    // Appliquer le filtre
-    applyFilter(allTourns, eventFilter);
-  };
-
-  const applyFilter = (tournaments: GroupedTournament[], filter: FilterType) => {
+  const applyFilter = (tournaments: TournamentWithPlayers[], filter: FilterType) => {
     const now = Math.floor(Date.now() / 1000); // Timestamp actuel en secondes
     
-    let filtered: GroupedTournament[];
+    let filtered: TournamentWithPlayers[];
     
     if (filter === 'upcoming') {
       // Garder seulement les tournois qui n'ont pas encore commencé
@@ -200,9 +91,18 @@ export default function UserTournaments() {
     });
   };
 
-  const allPlayersLoaded = DEFAULT_PLAYERS.every(slug => 
-    playersData[slug] && !playersData[slug].isLoading
-  );
+  // Créer un set de tous les joueurs uniques depuis le contexte
+  const allPlayersFromContext = new Set<string>();
+  const playersInfo = new Map<string, User>();
+  
+  tournamentsWithPlayers.forEach(tournament => {
+    tournament.participatingPlayers.forEach(player => {
+      allPlayersFromContext.add(player.slug);
+      playersInfo.set(player.slug, player.user);
+    });
+  });
+
+  const allPlayersLoaded = !isLoadingTournaments;
 
   // Calculer les comptes pour les filtres
   const now = Math.floor(Date.now() / 1000);
@@ -228,33 +128,25 @@ export default function UserTournaments() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 max-w-3xl mx-auto">
-          {DEFAULT_PLAYERS.map((slug, index) => {
-            const playerData = playersData[slug];
+          {Array.from(allPlayersFromContext).map((slug, index) => {
+            const user = playersInfo.get(slug);
             
             return (
               <div key={slug} className="bg-gray-50 border border-gray-200 rounded-xl p-4 sm:p-6 transition-all duration-300" onMouseOver={(e) => {(e.currentTarget as HTMLElement).style.backgroundColor = '#FEF1F2'; (e.currentTarget as HTMLElement).style.borderColor = '#F2A6AC';}} onMouseOut={(e) => {(e.currentTarget as HTMLElement).style.backgroundColor = ''; (e.currentTarget as HTMLElement).style.borderColor = '';}}>
-                {playerData?.isLoading ? (
+                {isLoadingTournaments ? (
                   <div className="text-center">
                     <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-200 rounded-full mx-auto mb-3 sm:mb-4 animate-pulse"></div>
                     <div className="h-4 sm:h-5 bg-gray-200 rounded mb-2 sm:mb-3 animate-pulse"></div>
                     <div className="h-3 sm:h-4 bg-gray-200 rounded w-2/3 mx-auto animate-pulse"></div>
                   </div>
-                ) : playerData?.error && !playerData?.user ? (
-                  <div className="text-center">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-red-100 rounded-full mx-auto mb-3 sm:mb-4 flex items-center justify-center">
-                      <UserIcon className="w-8 h-8 sm:w-10 sm:h-10 text-red-500" />
-                    </div>
-                    <h3 className="font-bold text-red-600 mb-2">ERREUR</h3>
-                    <p className="text-red-500 text-xs sm:text-sm font-medium">{slug}</p>
-                  </div>
-                ) : playerData?.user ? (
+                ) : user ? (
                   <div className="text-center">
                     {/* Photo de profil */}
                     <div className="relative w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 sm:mb-4">
-                      {playerData.user.images && playerData.user.images.length > 0 ? (
+                      {user.images && user.images.length > 0 ? (
                         <img
-                          src={playerData.user.images[0].url}
-                          alt={playerData.user.player?.gamerTag || playerData.user.name || 'Joueur'}
+                          src={user.images[0].url}
+                          alt={user.player?.gamerTag || user.name || 'Joueur'}
                           className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-4 shadow-lg hover:scale-105 transition-transform duration-300"
                           style={{borderColor: '#F2A6AC'}}
                           onError={(e) => {
@@ -268,7 +160,7 @@ export default function UserTournaments() {
                         className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform duration-300"
                         style={{ 
                           background: 'linear-gradient(135deg, #BE2D39 0%, #A12630 100%)', 
-                          display: playerData.user.images && playerData.user.images.length > 0 ? 'none' : 'flex' 
+                          display: user.images && user.images.length > 0 ? 'none' : 'flex' 
                         }}
                       >
                         <UserIcon className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
@@ -277,14 +169,14 @@ export default function UserTournaments() {
                     
                     {/* Nom */}
                     <h3 className="font-black text-gray-900 mb-2 text-base sm:text-lg tracking-tight">
-                      {playerData.user.player?.gamerTag || playerData.user.name || `JOUEUR ${index + 1}`}
+                      {user.player?.gamerTag || user.name || `JOUEUR ${index + 1}`}
                     </h3>
                     
                     {/* Sponsor */}
-                    {playerData.user.player?.prefix && (
+                    {user.player?.prefix && (
                       <div className="mb-2 sm:mb-3">
                         <span className="px-2 sm:px-3 py-1 text-white text-xs sm:text-sm font-bold rounded-full" style={{backgroundColor: '#BE2D39'}}>
-                          {playerData.user.player.prefix}
+                          {user.player.prefix}
                         </span>
                       </div>
                     )}
@@ -292,17 +184,25 @@ export default function UserTournaments() {
                     {/* Stats */}
                     <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm">
                       <div className="text-gray-600 font-medium">
-                        {playerData.tournaments?.pageInfo?.total || playerData.tournaments?.nodes.length || 0} tournois
+                        {allTournaments.filter(t => t.participatingPlayers.some(p => p.slug === slug)).length} tournois
                       </div>
-                      {playerData.user.player?.rankings && playerData.user.player.rankings.length > 0 && (
+                      {user.player?.rankings && user.player.rankings.length > 0 && (
                         <div className="flex items-center justify-center gap-2 bg-yellow-50 text-yellow-700 px-2 sm:px-3 py-1 rounded-full">
                           <Trophy className="w-3 h-3 sm:w-4 sm:h-4" />
-                          <span className="font-bold">#{playerData.user.player.rankings[0].rank}</span>
+                          <span className="font-bold">#{user.player.rankings[0].rank}</span>
                         </div>
                       )}
                     </div>
                   </div>
-                ) : null}
+                ) : (
+                  <div className="text-center">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-red-100 rounded-full mx-auto mb-3 sm:mb-4 flex items-center justify-center">
+                      <UserIcon className="w-8 h-8 sm:w-10 sm:h-10 text-red-500" />
+                    </div>
+                    <h3 className="font-bold text-red-600 mb-2">ERREUR</h3>
+                    <p className="text-red-500 text-xs sm:text-sm font-medium">{slug}</p>
+                  </div>
+                )}
               </div>
             );
           })}

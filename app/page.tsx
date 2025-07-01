@@ -1,131 +1,31 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Trophy, ExternalLink, Users, Calendar } from 'lucide-react';
 import UserTournaments from '@/components/UserTournaments';
 import { Calendar as CalendarComponent } from '@/components/calendar';
 import Footer from '@/components/Footer';
-import { Tournament, startggService, User } from '@/lib/startgg';
+import { useTournaments } from '@/lib/TournamentsContext';
 
 type ActiveSection = 'tournois' | 'agenda' | 'joueurs' | 'startgg';
 
-interface TournamentWithPlayers {
-  tournament: Tournament;
-  participatingPlayers: Array<{
-    slug: string;
-    user: User;
-  }>;
-}
-
 export default function Home() {
   const [activeSection, setActiveSection] = useState<ActiveSection>('tournois');
-  const [allTournaments, setAllTournaments] = useState<Tournament[]>([]);
-  const [tournamentsWithPlayers, setTournamentsWithPlayers] = useState<TournamentWithPlayers[]>([]);
-  const [isLoadingTournaments, setIsLoadingTournaments] = useState(false);
-  const [dataLoaded, setDataLoaded] = useState(false);
-  const [lastLoadTime, setLastLoadTime] = useState<number>(0);
-
-  // Joueurs prédéfinis - mêmes que dans UserTournaments.tsx
-  const DEFAULT_PLAYERS = [
-    'c28aec41',  // Joueur 1
-    '57bd7962',   // Joueur 2
-  ];
-
-  // Cache TTL de 5 minutes (300000 ms)
-  const CACHE_TTL = 5 * 60 * 1000;
-
-  // Vérifier si les données sont encore fraîches
-  const isDataFresh = () => {
-    return dataLoaded && (Date.now() - lastLoadTime) < CACHE_TTL;
-  };
-
-  // Extraire la logique de chargement pour la réutiliser
-  const loadAllTournamentsData = async () => {
-    console.log('🔄 Chargement des données depuis l\'API...');
-    setIsLoadingTournaments(true);
-    const allTourns: Tournament[] = [];
-    const tournamentsMap = new Map<string, TournamentWithPlayers>();
-
-    try {
-      for (const playerSlug of DEFAULT_PLAYERS) {
-        try {
-          // Récupérer les informations du joueur
-          const userData = await startggService.getUserEnhanced(playerSlug);
-          const userTournaments = await startggService.getUserTournaments(playerSlug);
-          
-          if (userTournaments?.nodes && userData) {
-            userTournaments.nodes.forEach(tournament => {
-              const tournamentData: Tournament = {
-                id: tournament.id,
-                name: tournament.name,
-                slug: tournament.slug,
-                startAt: tournament.startAt,
-                city: tournament.city,
-                countryCode: tournament.countryCode,
-                events: tournament.events?.map(e => ({ id: e.id, name: e.name })) || []
-              };
-
-              if (tournamentsMap.has(tournament.id)) {
-                // Ajouter ce joueur à la liste des participants
-                const existing = tournamentsMap.get(tournament.id)!;
-                if (!existing.participatingPlayers.some(p => p.slug === playerSlug)) {
-                  existing.participatingPlayers.push({ slug: playerSlug, user: userData });
-                }
-              } else {
-                // Créer une nouvelle entrée pour ce tournoi
-                tournamentsMap.set(tournament.id, {
-                  tournament: tournamentData,
-                  participatingPlayers: [{ slug: playerSlug, user: userData }]
-                });
-                allTourns.push(tournamentData);
-              }
-            });
-          }
-        } catch (error) {
-          console.error(`Erreur lors du chargement des tournois pour ${playerSlug}:`, error);
-        }
-      }
-
-      setAllTournaments(allTourns);
-      setTournamentsWithPlayers(Array.from(tournamentsMap.values()));
-      setDataLoaded(true);
-      setLastLoadTime(Date.now());
-      console.log(`✅ Données chargées avec succès (${allTourns.length} tournois)`);
-    } catch (error) {
-      console.error('Erreur lors du chargement des tournois:', error);
-    } finally {
-      setIsLoadingTournaments(false);
-    }
-  };
-
-  // Récupérer tous les tournois des joueurs avec informations des joueurs
-  useEffect(() => {
-    const loadAllTournaments = async () => {
-      // Ne pas recharger si les données sont déjà chargées et fraîches
-      if (isDataFresh()) {
-        console.log('📋 Données en cache utilisées, pas de rechargement API');
-        return;
-      }
-      
-      await loadAllTournamentsData();
-    };
-
-    loadAllTournaments();
-  }, []); // Pas de dépendance sur activeSection pour éviter les rechargements
+  
+  // Utiliser le contexte pour récupérer les données
+  const {
+    allTournaments,
+    tournamentsWithPlayers,
+    isLoadingTournaments,
+    dataLoaded,
+    lastLoadTime,
+    cacheExpiry,
+    refreshData,
+  } = useTournaments();
 
   const handleSectionChange = (section: ActiveSection) => {
     console.log(`🔄 Navigation vers: ${section}`);
     setActiveSection(section);
-  };
-
-  // Fonction pour forcer le rechargement des données (optionnel)
-  const refreshData = async () => {
-    console.log('🔄 Rechargement forcé des données...');
-    setDataLoaded(false);
-    setLastLoadTime(0);
-    
-    // Relancer le chargement immédiatement
-    await loadAllTournamentsData();
   };
 
   const renderActiveSection = () => {
@@ -149,7 +49,7 @@ export default function Home() {
                   isLoading={isLoadingTournaments}
                   dataLoaded={dataLoaded}
                   lastLoadTime={lastLoadTime}
-                  cacheExpiry={CACHE_TTL}
+                  cacheExpiry={cacheExpiry}
                 />
               )}
             </div>
