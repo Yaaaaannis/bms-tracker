@@ -75,7 +75,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
-          </section>
+          </section> 
         );
       case 'startgg':
         return (
@@ -138,7 +138,7 @@ export default function Home() {
                 TOURNOIS
               </a>
               <a 
-                href="https://start.gg" 
+                href="https://thebmscrew.com/?srsltid=AfmBOoqP8vmnnmbV1wxXphgX28M2Vi0olMCfUZzNZoXfNKL1kiLffS03" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-white px-4 py-2 rounded-lg font-medium transition-colors"
@@ -147,7 +147,7 @@ export default function Home() {
                 onMouseOut={(e) => (e.target as HTMLElement).style.backgroundColor = '#BE2D39'}
               >
                 <ExternalLink className="w-4 h-4" />
-                START.GG
+                SHOP BMS
               </a>
             </nav>
           </div>

@@ -32,7 +32,7 @@ export default function UserTournaments() {
         const dateB = b.tournament.startAt || 0;
         return dateB - dateA; // Plus récent en premier pour les événements passés
       });
-      
+
       setAllTournaments(sortedTournaments);
       applyFilter(sortedTournaments, eventFilter);
     }
