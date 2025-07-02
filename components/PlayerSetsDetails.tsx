@@ -122,7 +122,7 @@ export default function PlayerSetsDetails({
     if (vods.length === 0) return null;
 
     const validatedVods = vods.filter(vod => vod.validationStatus === 'valide');
-    const pendingVods = vods.filter(vod => vod.validationStatus === 'en_cours_validation');
+    const hasPendingVods = vods.some(vod => vod.validationStatus === 'en_cours_validation');
     
     return (
       <div className="flex flex-wrap gap-2">
@@ -140,16 +140,13 @@ export default function PlayerSetsDetails({
           </a>
         ))}
         
-        {/* VODs en cours de validation - indicateur non cliquable */}
-        {pendingVods.map(vod => (
-          <div
-            key={vod._id}
-            className="flex items-center justify-center text-center  px-1 py-1 bg-orange-500 text-white text-sm font-bold rounded-lg"
-          >
+        {/* VOD en cours de validation - indicateur unique */}
+        {hasPendingVods && (
+          <div className="flex items-center justify-center text-center px-1 py-1 bg-orange-500 text-white text-sm font-bold rounded-lg">
             <AlertCircle className="w-4 h-4" />
             VOD EN VALIDATION
           </div>
-        ))}
+        )}
       </div>
     );
   };
