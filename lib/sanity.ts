@@ -1,12 +1,21 @@
 import { createClient } from '@sanity/client';
 import { projectId, dataset, apiVersion } from '../sanity/env';
 
-// Configuration Sanity
+// Configuration Sanity pour la lecture (avec CDN)
 const client = createClient({
   projectId,
   dataset,
   useCdn: true,
   apiVersion,
+});
+
+// Configuration Sanity pour l'écriture (sans CDN, avec token)
+const writeClient = createClient({
+  projectId,
+  dataset,
+  useCdn: false,
+  apiVersion,
+  token: process.env.NEXT_PUBLIC_SANITY_WRITE_TOKEN, // Token avec permissions d'écriture
 });
 
 export interface SetVod {
@@ -17,6 +26,11 @@ export interface SetVod {
   tournamentName: string;
   vodUrl: string;
   timestamp?: string;
+  startggSetId?: string;
+  validationStatus: 'en_cours_validation' | 'valide' | 'rejete';
+  notes?: string;
+  submitterTwitter?: string;
+  _createdAt: string;
 }
 
 // Récupérer toutes les VODs
@@ -30,13 +44,109 @@ export async function getAllVods(): Promise<SetVod[]> {
         opponentName,
         tournamentName,
         vodUrl,
-        timestamp
+        timestamp,
+        startggSetId,
+        validationStatus,
+        notes,
+        submitterTwitter,
+        _createdAt
       }
     `);
     return vods;
   } catch (error) {
     console.error('Erreur lors de la récupération des VODs:', error);
     return [];
+  }
+}
+
+// Récupérer seulement les VODs validées
+export async function getValidatedVods(): Promise<SetVod[]> {
+  try {
+    const vods = await client.fetch(`
+      *[_type == "setVod" && validationStatus == "valide"] | order(_createdAt desc){
+        _id,
+        setName,
+        playerName,
+        opponentName,
+        tournamentName,
+        vodUrl,
+        timestamp,
+        startggSetId,
+        validationStatus,
+        notes,
+        submitterTwitter,
+        _createdAt
+      }
+    `);
+    return vods;
+  } catch (error) {
+    console.error('Erreur lors de la récupération des VODs validées:', error);
+    return [];
+  }
+}
+
+// Récupérer les VODs validées pour un joueur spécifique
+export async function getValidatedVodsForPlayer(playerName: string): Promise<SetVod[]> {
+  try {
+    const vods = await client.fetch(`
+      *[_type == "setVod" && 
+        validationStatus == "valide" && 
+        (playerName match $playerName || opponentName match $playerName)
+      ] | order(_createdAt desc){
+        _id,
+        setName,
+        playerName,
+        opponentName,
+        tournamentName,
+        vodUrl,
+        timestamp,
+        startggSetId,
+        validationStatus,
+        notes,
+        submitterTwitter,
+        _createdAt
+      }
+    `, {
+      playerName: `*${playerName}*`
+    });
+    return vods;
+  } catch (error) {
+    console.error('Erreur lors de la récupération des VODs validées pour le joueur:', error);
+    return [];
+  }
+}
+
+// Interface pour la soumission de VOD par la communauté
+export interface VodSubmissionData {
+  playerName: string;
+  opponentName: string;
+  setName: string;
+  tournamentName: string;
+  vodUrl: string;
+  timestamp?: string;
+  submitterTwitter?: string;
+}
+
+// Créer une nouvelle soumission de VOD par la communauté
+export async function createVodSubmission(data: VodSubmissionData): Promise<void> {
+  try {
+    const vodDocument = {
+      _type: 'setVod',
+      setName: data.setName,
+      playerName: data.playerName,
+      opponentName: data.opponentName,
+      tournamentName: data.tournamentName,
+      vodUrl: data.vodUrl,
+      timestamp: data.timestamp,
+      validationStatus: 'en_cours_validation' as const, // Statut par défaut pour les soumissions communautaires
+      submitterTwitter: data.submitterTwitter,
+      _createdAt: new Date().toISOString()
+    };
+
+    await writeClient.create(vodDocument);
+  } catch (error) {
+    console.error('Erreur lors de la création de la soumission VOD:', error);
+    throw new Error('Erreur lors de la soumission de la VOD');
   }
 }
 

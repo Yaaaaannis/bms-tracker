@@ -55,6 +55,41 @@ export default defineType({
       description: 'ID du set sur start.gg pour matching automatique'
     }),
     defineField({
+      name: 'validationStatus',
+      title: 'Statut de Validation',
+      type: 'string',
+      description: 'Statut de validation de la VOD proposée',
+      options: {
+        list: [
+          { title: 'En cours de validation', value: 'en_cours_validation' },
+          { title: 'Validé', value: 'valide' },
+          { title: 'Rejeté', value: 'rejete' }
+        ],
+        layout: 'radio'
+      },
+      initialValue: 'en_cours_validation',
+      validation: Rule => Rule.required()
+    }),
+    defineField({
+      name: 'submitterTwitter',
+      title: 'Twitter du contributeur',
+      type: 'string',
+      description: 'Nom d\'utilisateur Twitter (@username) de la personne qui a proposé cette VOD',
+      placeholder: '@username ou username',
+      validation: Rule => Rule.custom(value => {
+        if (!value) return true; // Optionnel
+        
+        // Valider que c'est bien un nom d'utilisateur Twitter (pas une URL)
+        const twitterUsernameRegex = /^@?[A-Za-z0-9_]{1,15}$/;
+        
+        if (!twitterUsernameRegex.test(value)) {
+          return 'Veuillez entrer un nom d\'utilisateur Twitter valide (@username ou username). Maximum 15 caractères, lettres, chiffres et _ seulement.';
+        }
+        
+        return true;
+      })
+    }),
+    defineField({
       name: 'notes',
       title: 'Notes',
       type: 'text',
@@ -66,16 +101,27 @@ export default defineType({
       playerName: 'playerName',
       opponentName: 'opponentName',
       setName: 'setName',
-      tournamentName: 'tournamentName'
+      tournamentName: 'tournamentName',
+      validationStatus: 'validationStatus'
     },
-    prepare({playerName, opponentName, setName, tournamentName}) {
+    prepare({playerName, opponentName, setName, tournamentName, validationStatus}) {
+      const statusEmoji = validationStatus === 'valide' ? '✅' : 
+                         validationStatus === 'rejete' ? '❌' : '⏳';
       return {
-        title: `${playerName} vs ${opponentName}`,
+        title: `${statusEmoji} ${playerName} vs ${opponentName}`,
         subtitle: `${setName} - ${tournamentName}`
       }
     }
   },
   orderings: [
+    {
+      title: 'Par statut de validation',
+      name: 'validationStatusDesc',
+      by: [
+        {field: 'validationStatus', direction: 'asc'},
+        {field: '_createdAt', direction: 'desc'}
+      ]
+    },
     {
       title: 'Par tournoi',
       name: 'tournamentDesc',

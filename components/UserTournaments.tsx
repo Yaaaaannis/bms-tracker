@@ -91,6 +91,8 @@ export default function UserTournaments() {
     });
   };
 
+
+
   // Créer un set de tous les joueurs uniques depuis le contexte
   const allPlayersFromContext = new Set<string>();
   const playersInfo = new Map<string, User>();

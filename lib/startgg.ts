@@ -14,6 +14,21 @@ export interface Player {
 // Set type alias for components that work with set data
 export type Set = UserSet;
 
+// VOD interface for validated VODs from Sanity
+export interface VOD {
+  _id: string;
+  setName: string;
+  playerName: string;
+  opponentName: string;
+  tournamentName: string;
+  vodUrl: string;
+  timestamp?: string;
+  startggSetId?: string;
+  validationStatus: 'en_cours_validation' | 'valide' | 'rejete';
+  notes?: string;
+  _createdAt: string;
+}
+
 // Types étendus pour supporter toutes les données disponibles
 export interface Image {
   url: string;

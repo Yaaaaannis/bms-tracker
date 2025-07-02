@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { startggService, PlayerSetsInTournament, TournamentSet } from '@/lib/startgg';
-import { findVodForSet, buildVodUrl, SetVod } from '@/lib/sanity';
-import { Trophy, X, TrendingUp, TrendingDown, Minus, Users, ExternalLink, Play } from 'lucide-react';
+import { getAllVods, buildVodUrl, SetVod } from '@/lib/sanity';
+import { Trophy, X, TrendingUp, TrendingDown, Minus, Users, ExternalLink, Play, AlertCircle, Plus } from 'lucide-react';
+import VodSubmissionModal from './VodSubmissionModal';
 
 interface PlayerSetsDetailsProps {
   userSlug: string;
@@ -23,47 +24,164 @@ export default function PlayerSetsDetails({
   const [sets, setSets] = useState<PlayerSetsInTournament | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [vods, setVods] = useState<Map<string, SetVod>>(new Map());
+  const [allVods, setAllVods] = useState<SetVod[]>([]);
+  const [vodSubmissionModal, setVodSubmissionModal] = useState<{
+    isOpen: boolean;
+    setData?: {
+      playerName: string;
+      opponentName: string;
+      setName: string;
+      tournamentName: string;
+    };
+  }>({ isOpen: false });
 
   useEffect(() => {
-    loadPlayerSets();
+    loadData();
   }, [userSlug, tournamentSlug]);
 
-  const loadPlayerSets = async () => {
+  const loadData = async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await startggService.getPlayerSetsInTournament(userSlug, tournamentSlug);
-      setSets(data);
       
-      // Charger les VODs pour chaque set
-      if (data?.nodes) {
-        const vodMap = new Map<string, SetVod>();
-        
-        for (const set of data.nodes) {
-          const opponent = getOpponentName(set);
-          const setName = set.fullRoundText || `Round ${set.round}`;
-          
-          const vod = await findVodForSet(
-            playerName,
-            opponent,
-            tournamentName,
-            setName
-          );
-          
-          if (vod) {
-            vodMap.set(set.id, vod);
-          }
-        }
-        
-        setVods(vodMap);
-      }
+      // Charger les sets et toutes les VODs en parallèle
+      const [setsData, vodsData] = await Promise.all([
+        startggService.getPlayerSetsInTournament(userSlug, tournamentSlug),
+        getAllVods()
+      ]);
+      
+      setSets(setsData);
+      setAllVods(vodsData);
     } catch (err) {
       console.error('Error loading player sets:', err);
       setError('Erreur lors du chargement des sets');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleVodSubmissionSuccess = () => {
+    // Recharger les VODs après une soumission réussie
+    loadData();
+  };
+
+  const openVodSubmissionModal = (set: TournamentSet) => {
+    const opponent = getOpponentName(set);
+    const setName = set.fullRoundText || `Round ${set.round}`;
+    
+    setVodSubmissionModal({
+      isOpen: true,
+      setData: {
+        playerName,
+        opponentName: opponent,
+        setName,
+        tournamentName
+      }
+    });
+  };
+
+  // Fonction pour trouver les VODs correspondant à un set spécifique (correspondance exacte)
+  const findVodsForSet = (set: TournamentSet): SetVod[] => {
+    const opponent = getOpponentName(set);
+    const setName = set.fullRoundText || `Round ${set.round}`;
+    
+    return allVods.filter(vod => {
+      // Recherche flexible sur le nom du tournoi
+      const tournamentMatch = vod.tournamentName.toLowerCase().includes(tournamentName.toLowerCase()) ||
+                            tournamentName.toLowerCase().includes(vod.tournamentName.toLowerCase());
+      
+      if (!tournamentMatch) return false;
+      
+      // Normaliser les noms pour la comparaison exacte
+      const normalizePlayerName = (name: string) => name.toLowerCase().trim().replace(/\s+/g, ' ');
+      
+      const normalizedPlayerName = normalizePlayerName(playerName);
+      const normalizedOpponent = normalizePlayerName(opponent);
+      const normalizedSetName = normalizePlayerName(setName);
+      
+      const normalizedVodPlayer = normalizePlayerName(vod.playerName);
+      const normalizedVodOpponent = normalizePlayerName(vod.opponentName);
+      const normalizedVodSet = normalizePlayerName(vod.setName);
+      
+      // Vérification exacte des joueurs (dans les deux sens possibles)
+      const exactPlayerMatch = (
+        (normalizedVodPlayer === normalizedPlayerName && normalizedVodOpponent === normalizedOpponent) ||
+        (normalizedVodPlayer === normalizedOpponent && normalizedVodOpponent === normalizedPlayerName)
+      );
+      
+      // Vérification exacte du nom du set
+      const exactSetMatch = normalizedVodSet === normalizedSetName;
+      
+      // Les deux doivent correspondre exactement
+      return exactPlayerMatch && exactSetMatch;
+    });
+  };
+
+  // Fonction pour rendre les boutons/indications VOD selon le statut
+  const renderVodElements = (vods: SetVod[]) => {
+    if (vods.length === 0) return null;
+
+    const validatedVods = vods.filter(vod => vod.validationStatus === 'valide');
+    const pendingVods = vods.filter(vod => vod.validationStatus === 'en_cours_validation');
+    
+    return (
+      <div className="flex flex-wrap gap-2">
+        {/* VODs validées - boutons cliquables */}
+        {validatedVods.map(vod => (
+          <a
+            key={vod._id}
+            href={buildVodUrl(vod.vodUrl, vod.timestamp)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-colors"
+          >
+            <Play className="w-4 h-4" />
+            VOD
+          </a>
+        ))}
+        
+        {/* VODs en cours de validation - indicateur non cliquable */}
+        {pendingVods.map(vod => (
+          <div
+            key={vod._id}
+            className="flex items-center justify-center text-center  px-1 py-1 bg-orange-500 text-white text-sm font-bold rounded-lg"
+          >
+            <AlertCircle className="w-4 h-4" />
+            VOD EN VALIDATION
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // Fonction pour afficher les crédits Twitter des contributeurs
+  const renderTwitterCredits = (vods: SetVod[]) => {
+    const vodsWithTwitter = vods.filter(vod => 
+      vod.submitterTwitter && 
+      (vod.validationStatus === 'valide' || vod.validationStatus === 'en_cours_validation')
+    );
+
+    if (vodsWithTwitter.length === 0) return null;
+
+    return (
+      <div className="absolute bottom-2 right-2 flex flex-wrap gap-1">
+        {vodsWithTwitter.map(vod => {
+          const username = vod.submitterTwitter?.replace('@', '') || '';
+          return (
+            <a
+              key={vod._id}
+              href={`https://x.com/${username}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-gray-500 hover:text-gray-700 transition-colors opacity-70"
+              title={`VOD proposée par @${username}`}
+            >
+              Contributeur : {username}
+            </a>
+          );
+        })}
+      </div>
+    );
   };
 
   const getSetResult = (set: TournamentSet) => {
@@ -232,10 +350,12 @@ export default function PlayerSetsDetails({
                   const result = getSetResult(set);
                   const opponent = getOpponentName(set);
                   
+                  const vods = findVodsForSet(set);
+
                   return (
                     <div 
                       key={set.id} 
-                      className={`p-4 rounded-xl border-2 transition-all duration-200 ${
+                      className={`relative p-4 rounded-xl border-2 transition-all duration-200 ${
                         result === 'win' 
                           ? 'border-green-200 bg-green-50' 
                           : result === 'loss' 
@@ -296,20 +416,18 @@ export default function PlayerSetsDetails({
 
                         {/* Actions */}
                         <div className="flex items-center gap-2">
-                          {/* Bouton VOD si disponible */}
-                          {vods.has(set.id) && (
-                            <a
-                              href={buildVodUrl(
-                                vods.get(set.id)!.vodUrl,
-                                vods.get(set.id)!.timestamp
-                              )}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-1 px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-colors"
+                          {/* VODs existantes */}
+                          {renderVodElements(vods)}
+                          
+                          {/* Bouton pour proposer une VOD si aucune VOD validée */}
+                          {vods.filter(vod => vod.validationStatus === 'valide').length === 0 && (
+                            <button
+                              onClick={() => openVodSubmissionModal(set)}
+                              className="flex items-center gap-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition-colors"
                             >
-                              <Play className="w-4 h-4" />
-                              VOD
-                            </a>
+                              <Plus className="w-4 h-4" />
+                              SOUMETTRE VOD
+                            </button>
                           )}
                           
                           {/* Badge résultat */}
@@ -324,6 +442,9 @@ export default function PlayerSetsDetails({
                           </div>
                         </div>
                       </div>
+                      
+                      {/* Crédits Twitter des contributeurs */}
+                      {renderTwitterCredits(vods)}
                     </div>
                   );
                 })}
@@ -344,6 +465,19 @@ export default function PlayerSetsDetails({
           </div>
         </div>
       </div>
+
+      {/* Modal de soumission de VOD */}
+      {vodSubmissionModal.isOpen && vodSubmissionModal.setData && (
+        <VodSubmissionModal
+          isOpen={vodSubmissionModal.isOpen}
+          onClose={() => setVodSubmissionModal({ isOpen: false })}
+          playerName={vodSubmissionModal.setData.playerName}
+          opponentName={vodSubmissionModal.setData.opponentName}
+          setName={vodSubmissionModal.setData.setName}
+          tournamentName={vodSubmissionModal.setData.tournamentName}
+          onSuccess={handleVodSubmissionSuccess}
+        />
+      )}
     </div>
   );
-} 
+}
