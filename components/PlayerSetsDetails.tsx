@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { startggService, PlayerSetsInTournament, TournamentSet } from '@/lib/startgg';
+import { startggService, PlayerSetsInTournament, TournamentSet, User } from '@/lib/startgg';
 import { getAllVods, buildVodUrl, SetVod } from '@/lib/sanity';
 import { Trophy, X, TrendingUp, TrendingDown, Minus, Users, ExternalLink, Play, AlertCircle, Plus } from 'lucide-react';
 import VodSubmissionModal from './VodSubmissionModal';
@@ -10,7 +10,7 @@ interface PlayerSetsDetailsProps {
   players: Array<{
     userSlug: string;
     playerName: string;
-    user: any; // User from startgg.ts
+    user: User;
   }>;
   tournamentSlug: string;
   tournamentName: string;
