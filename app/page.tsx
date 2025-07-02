@@ -342,7 +342,7 @@ export default function Home() {
                        ? 'text-red-200' 
                        : 'text-gray-500 group-hover:text-red-100'
                    }`}>
-                     2024
+                     2025
                    </span>
                  </div>
                  <Calendar className={`w-8 h-8 transition-colors ${
