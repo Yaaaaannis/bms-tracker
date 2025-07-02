@@ -16,10 +16,13 @@ export default function UserTournaments() {
   const [currentPage, setCurrentPage] = useState(1);
   const [eventFilter, setEventFilter] = useState<FilterType>('upcoming');
   const [selectedTournamentForSets, setSelectedTournamentForSets] = useState<{
-    userSlug: string;
+    players: Array<{
+      userSlug: string;
+      playerName: string;
+      user: User;
+    }>;
     tournamentSlug: string;
     tournamentName: string;
-    playerName: string;
   } | null>(null);
   const itemsPerPage = 15;
 
@@ -309,12 +312,14 @@ export default function UserTournaments() {
                         }`}
                         onClick={() => {
                           if (isPastEvent && item.tournament.slug) {
-                            const firstPlayer = item.participatingPlayers[0];
                             setSelectedTournamentForSets({
-                              userSlug: firstPlayer.slug,
+                              players: item.participatingPlayers.map(player => ({
+                                userSlug: player.slug,
+                                playerName: player.user.player?.gamerTag || player.user.name || 'Joueur',
+                                user: player.user
+                              })),
                               tournamentSlug: item.tournament.slug,
-                              tournamentName: item.tournament.name,
-                              playerName: firstPlayer.user.player?.gamerTag || firstPlayer.user.name || 'Joueur'
+                              tournamentName: item.tournament.name
                             });
                           }
                         }}
@@ -603,10 +608,9 @@ export default function UserTournaments() {
       {/* Modal des sets détaillés */}
       {selectedTournamentForSets && (
         <PlayerSetsDetails
-          userSlug={selectedTournamentForSets.userSlug}
+          players={selectedTournamentForSets.players}
           tournamentSlug={selectedTournamentForSets.tournamentSlug}
           tournamentName={selectedTournamentForSets.tournamentName}
-          playerName={selectedTournamentForSets.playerName}
           onClose={() => setSelectedTournamentForSets(null)}
         />
       )}

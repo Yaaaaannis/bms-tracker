@@ -7,20 +7,23 @@ import { Trophy, X, TrendingUp, TrendingDown, Minus, Users, ExternalLink, Play, 
 import VodSubmissionModal from './VodSubmissionModal';
 
 interface PlayerSetsDetailsProps {
-  userSlug: string;
+  players: Array<{
+    userSlug: string;
+    playerName: string;
+    user: any; // User from startgg.ts
+  }>;
   tournamentSlug: string;
   tournamentName: string;
-  playerName: string;
   onClose: () => void;
 }
 
 export default function PlayerSetsDetails({ 
-  userSlug, 
+  players, 
   tournamentSlug, 
   tournamentName, 
-  playerName, 
   onClose 
 }: PlayerSetsDetailsProps) {
+  const [selectedPlayerIndex, setSelectedPlayerIndex] = useState(0);
   const [sets, setSets] = useState<PlayerSetsInTournament | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +37,10 @@ export default function PlayerSetsDetails({
       tournamentName: string;
     };
   }>({ isOpen: false });
+
+  const currentPlayer = players[selectedPlayerIndex];
+  const userSlug = currentPlayer.userSlug;
+  const playerName = currentPlayer.playerName;
 
   useEffect(() => {
     loadData();
@@ -291,6 +298,40 @@ export default function PlayerSetsDetails({
               <X className="w-6 h-6 text-gray-500" />
             </button>
           </div>
+
+          {/* Onglets des joueurs */}
+          {players.length > 1 && (
+            <div className="flex items-center gap-2 mt-4 p-1 bg-gray-100 rounded-lg">
+              {players.map((player, index) => (
+                <button
+                  key={player.userSlug}
+                  onClick={() => setSelectedPlayerIndex(index)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-md font-bold text-sm transition-all duration-200 ${
+                    selectedPlayerIndex === index
+                      ? 'text-white shadow-md'
+                      : 'text-gray-700 hover:bg-white'
+                  }`}
+                  style={selectedPlayerIndex === index ? {backgroundColor: '#BE2D39'} : {}}
+                >
+                  {player.user.images && player.user.images.length > 0 ? (
+                    <img
+                      src={player.user.images[0].url}
+                      alt={player.playerName}
+                      className="w-5 h-5 rounded-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center bg-gray-300">
+                      <span className="text-xs text-gray-600">{player.playerName.charAt(0)}</span>
+                    </div>
+                  )}
+                  {player.playerName}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Stats */}
           {!isLoading && sets && (

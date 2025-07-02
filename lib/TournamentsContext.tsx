@@ -59,7 +59,7 @@ export function TournamentsProvider({ children }: { children: ReactNode }) {
         try {
           // Récupérer les informations du joueur
           const userData = await startggService.getUserEnhanced(playerSlug);
-          const userTournaments = await startggService.getUserTournaments(playerSlug);
+          const userTournaments = await startggService.getUserTournaments(playerSlug, 1, 30); // Récupérer 30 tournois au lieu de 10
           
           if (userTournaments?.nodes && userData) {
             userTournaments.nodes.forEach(tournament => {
