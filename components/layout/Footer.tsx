@@ -22,7 +22,7 @@ export default function Footer() {
           <div className="flex flex-col md:flex-row items-center gap-8">
             <div className="text-center md:text-right">
               <p className="text-sm text-gray-600 mb-2">
-                Créé avec par{' '}
+                Créé par{' '}
                 <a
                   href="https://x.com/BMS_Talents"
                   target="_blank"
