@@ -7,6 +7,7 @@ import { Tournament, startggService, User, UserTournaments } from '@/lib/startgg
 export const DEFAULT_PLAYERS = [
   'c28aec41',  // Joueur 1
   '57bd7962',   // Joueur 2
+  'bae2c7bf', // Joueur 3
 ];
 
 // Type pour un tournoi complet avec toutes les propriétés nécessaires

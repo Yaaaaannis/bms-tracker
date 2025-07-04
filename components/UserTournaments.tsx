@@ -132,7 +132,22 @@ export default function UserTournaments() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 max-w-3xl mx-auto">
+        <div className={`grid gap-4 sm:gap-6 mx-auto ${(() => {
+          const playerCount = allPlayersFromContext.size;
+          if (playerCount === 1) {
+            return 'grid-cols-1 max-w-md';
+          } else if (playerCount === 2) {
+            return 'grid-cols-1 sm:grid-cols-2 max-w-2xl';
+          } else if (playerCount === 3) {
+            return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl';
+          } else if (playerCount === 4) {
+            return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 max-w-5xl';
+          } else if (playerCount <= 6) {
+            return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-5xl';
+          } else {
+            return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 max-w-7xl';
+          }
+        })()}`}>
           {Array.from(allPlayersFromContext).map((slug, index) => {
             const user = playersInfo.get(slug);
             
